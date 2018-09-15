@@ -1,3 +1,4 @@
+import changelog.CommitMessageParser;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -9,12 +10,15 @@ import org.junit.Test;
  */
 public class ReadTest {
 
+    public static final String DELIMITER = "[_change_log]";
+
     @Test
     public void temp() {
         List<String> messages = Arrays.asList(
             new StringBuilder("[_change_log] version : v1.0.0 [_change_log]").toString(),
             new StringBuilder("[_change_log] \nfeature : this is feature message \n[_change_log]").toString(),
             new StringBuilder("[_change_log] fix : this is fix message\n \n[_change_log]").toString(),
+            new StringBuilder("[_change_log] fix(lang) : this is fix message\n \n[_change_log]").toString(),
             new StringBuilder("[_change_log] custom : this is custom message [_change_log]").toString(),
             new StringBuilder("[_change_log] custom : this is custom message \nthis is body..[_change_log]").toString(),
             new StringBuilder("[_change_log][_change_log]").toString(),
@@ -22,67 +26,53 @@ public class ReadTest {
         );
 
         for (String message : messages) {
-            displayMessage(message);
+            System.out.println("---------------------------------------------------------");
+            System.out.println("Origin : \n" + message);
+            System.out.println(">>>");
+            System.out.println(Arrays.toString(parseCommit(message)));
         }
     }
 
-    private void displayMessage(String message) {
-        System.out.println("--------------------------------------------");
-        System.out.println(">> read message : \n" + message);
-        System.out.println(">> Result");
-        final String delimiter = "[_change_log]";
+    public String[] parseCommit(String message) {
         if (message == null || message.length() == 0) {
-            System.out.println(">> Skip");
-            return;
-        }
-
-        int startIdx = message.indexOf(delimiter);
-        if (startIdx < 0) {
-            System.out.println(">> Skip");
-            return;
-        }
-
-        int lastIdx = message.lastIndexOf(delimiter);
-        if (lastIdx < 0) {
-            System.out.println(">> Skip");
-            return;
-        }
-
-        String commitMessage = message.substring(startIdx + delimiter.length(), lastIdx).trim();
-        parseCommitMessage(commitMessage);
-    }
-
-    private void parseCommitMessage(String message) {
-        if (message == null || message.length() == 0) {
-            System.out.println("Invalid commit message..");
-            return;
-        }
-
-        String[] token = tokenizeMessage(message);
-        if (token == null) {
-            return;
-        }
-
-        SimpleLogger.println("Type : {}\nDescription : {}\nBody : {}", token[0], token[1], token[2]);
-    }
-
-    private String[] tokenizeMessage(String message) {
-        // type / description / body
-        String[] token = new String[3];
-
-        int typeStartLastIdx = message.indexOf(':');
-        if (typeStartLastIdx < 0) {
-            System.out.println("Invalid message. there is no : at message");
             return null;
         }
 
-        token[0] = message.substring(0, typeStartLastIdx).trim();
+        int startIdx = message.indexOf(DELIMITER);
+        if (startIdx < 0) {
+            return null;
+        }
+
+        int lastIdx = message.lastIndexOf(DELIMITER);
+        if (lastIdx < 0) {
+            return null;
+        }
+
+        String extractMessage = message.substring(startIdx + DELIMITER.length(), lastIdx).trim();
+        int typeStartLastIdx = extractMessage.indexOf(':');
+        if (typeStartLastIdx < 0) {
+            return null;
+        }
+
+        String[] token = new String[4];
+
+        // type
+        token[0] = extractMessage.substring(0, typeStartLastIdx).trim();
+        int scopeStart = token[0].indexOf('(');
+        int scopeEnd = token[0].lastIndexOf(')');
+
+        // scope
+        if (scopeStart > -1 && scopeEnd > -1) {
+            token[1] = token[0].substring(scopeStart + 1, scopeEnd);
+            token[0] = token[0].substring(0, scopeStart);
+        }
+
         boolean findLineSeparator = false;
-        for (int i = typeStartLastIdx; i < message.length(); i++) {
-            if (message.charAt(i) == '\n') {
-                token[1] = message.substring(typeStartLastIdx + 1, i).trim();
-                if (i != message.length() - 1) {
-                    token[2] = message.substring(i+1).trim();
+        for (int i = typeStartLastIdx; i < extractMessage.length(); i++) {
+            if (extractMessage.charAt(i) == '\n') {
+                token[2] = extractMessage.substring(typeStartLastIdx + 1, i).trim();
+                if (i != extractMessage.length() - 1) {
+                    token[3] = extractMessage.substring(i+1).trim();
                 }
                 findLineSeparator = true;
                 break;
@@ -90,7 +80,7 @@ public class ReadTest {
         }
 
         if (!findLineSeparator) {
-            token[1] = message.substring(typeStartLastIdx + 1).trim();
+            token[2] = extractMessage.substring(typeStartLastIdx + 1).trim();
         }
 
         return token;

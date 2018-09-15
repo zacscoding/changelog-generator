@@ -10,34 +10,34 @@ import java.util.Set;
  */
 public class Type {
 
-    public static Type FEATURE = new Type(TypeEnum.FEATURE, "Features");
-    public static Type FIX = new Type(TypeEnum.FIX, "Bug Fixes");
+    public static final Type FEAT = new Type(CommitType.FEAT, "Features");
+    public static final Type FIX = new Type(CommitType.FIX, "Bug Fixes");
 
-    private TypeEnum type;
-    private String displayName;
+    private final CommitType type;
+    private final String displayName;
 
-    public Type(TypeEnum type, String displayName) {
+    public Type(CommitType type, String displayName) {
         this.type = type;
         this.displayName = displayName;
     }
 
     public static Type getType(String name) {
-        TypeEnum type = TypeEnum.getType(name);
+        CommitType type = CommitType.getType(name);
 
         switch (type) {
-            case FEATURE:
-                return Type.FEATURE;
+            case FEAT:
+                return Type.FEAT;
             case FIX:
                 return Type.FIX;
             case VERSION :
-                return new Type(TypeEnum.VERSION, name);
+                return new Type(CommitType.VERSION, name);
             case CUSTOM:
             default:
-                return new Type(TypeEnum.CUSTOM, name);
+                return new Type(CommitType.CUSTOM, name);
         }
     }
 
-    public TypeEnum getType() {
+    public CommitType getType() {
         return type;
     }
 
@@ -45,14 +45,14 @@ public class Type {
         return displayName;
     }
 
-    public enum TypeEnum {
-        VERSION, FEATURE, FIX, CUSTOM;
+    public enum CommitType {
+        VERSION, FEAT, FIX, CUSTOM;
 
-        private static final Set<TypeEnum> TYPES = EnumSet.allOf(TypeEnum.class);
+        private static final Set<CommitType> TYPES = EnumSet.allOf(CommitType.class);
 
-        public static TypeEnum getType(String name) {
+        public static CommitType getType(String name) {
             if (name != null && name.length() > 0) {
-                for (TypeEnum type : TYPES) {
+                for (CommitType type : TYPES) {
                     if (type.name().equalsIgnoreCase(name)) {
                         return type;
                     }
