@@ -3,14 +3,17 @@ package changelog;
 import changelog.VersionWriter.FileFormat;
 import changelog.model.ParsedMessage;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Stack;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -22,18 +25,11 @@ import org.eclipse.jgit.revwalk.RevCommit;
  */
 public class ChangeLogGenerator {
 
-    public static void main(String[] args) {
-        String gitDir = "E:\\changelog";
-        String branchName = "master";
-        generateChangeLog(gitDir, branchName, null);
-    }
-
-    public static void generateChangeLog(String gitDir, String branchName, String destFile) {
+    public static void generateChangeLog(String gitDir, String branchName, String destFile, String remoteUrl) {
         Objects.requireNonNull(gitDir, "gitDir must be not null");
         Objects.requireNonNull(branchName, "branchName must be not null");
         Objects.requireNonNull(destFile, "destFile must be not null");
 
-        StringWriter stringWriter = new StringWriter();
         VersionWriter versionWriter = null;
         FileFormat writeFileFormat = FileFormat.getType(destFile);
         switch (writeFileFormat) {
@@ -45,7 +41,7 @@ public class ChangeLogGenerator {
         }
 
         try (Git git = Git.open(new File(gitDir)); Repository repository = git.getRepository()) {
-            Queue<VersionCollector> versionCollectors = new LinkedList<>();
+            Deque<VersionCollector> versionCollectors = new LinkedList<>();
             Iterable<RevCommit> logs = git.log().add(repository.resolve(branchName)).call();
 
             // collect commit logs..
@@ -59,57 +55,63 @@ public class ChangeLogGenerator {
                 switch (parsedMessage.getType().getType()) {
                     case VERSION:
                         VersionCollector version = new VersionCollector(parsedMessage.getDescription(), parsedMessage.getCommitTime());
-                        versionCollectors.add(version);
+                        versionCollectors.addLast(version);
                         break;
                     case FEAT:
                     case FIX:
                     case CUSTOM:
                         ensureExistVersion(versionCollectors, parsedMessage);
-                        versionCollectors.peek().pushMessage(parsedMessage);
+                        versionCollectors.getLast().pushMessage(parsedMessage);
                 }
             }
 
+            File file = new File(destFile);
+            if (file.exists()) {
+                file.delete();
+            }
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            while (!versionCollectors.isEmpty()) {
-                VersionCollector version = versionCollectors.poll();
-                // write version
-                versionWriter.writeVersion(stringWriter, version.getVersion(), sdf.format(version.getTime()));
+            file.createNewFile();
 
-                // write fix
-                writeTypes(version.getFixes(), versionWriter, stringWriter);
+            try (FileWriter writer = new FileWriter(file)) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                while (!versionCollectors.isEmpty()) {
+                    VersionCollector version = versionCollectors.poll();
+                    // write version
+                    versionWriter.writeVersion(writer, version.getVersion(), sdf.format(version.getTime()));
 
-                // write features
-                writeTypes(version.getFeatures(), versionWriter, stringWriter);
+                    // write fix
+                    writeTypes(version.getFixes(), versionWriter, writer, remoteUrl);
 
-                // write custom
-                if (!version.getCustomMap().isEmpty()) {
-                    for(Entry<String, Queue<ParsedMessage>> entry : version.getCustomMap().entrySet()) {
-                        writeTypes(entry.getValue(), versionWriter, stringWriter);
+                    // write features
+                    writeTypes(version.getFeatures(), versionWriter, writer, remoteUrl);
+
+                    // write custom
+                    if (!version.getCustomMap().isEmpty()) {
+                        for(Entry<String, Queue<ParsedMessage>> entry : version.getCustomMap().entrySet()) {
+                            writeTypes(entry.getValue(), versionWriter, writer, remoteUrl);
+                        }
                     }
                 }
             }
-
-            System.out.println(stringWriter.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void writeTypes(Queue<ParsedMessage> que, VersionWriter versionWriter, Writer writer) throws IOException  {
+    private static void writeTypes(Queue<ParsedMessage> que, VersionWriter versionWriter, Writer writer, String remoteUrl) throws IOException  {
         if (!que.isEmpty()) {
             versionWriter.writeType(writer, que.peek().getType().getDisplayName());
             while (!que.isEmpty()) {
                 ParsedMessage fix = que.poll();
-                versionWriter.writeTypeContent(writer, fix);
+                versionWriter.writeTypeContent(writer, fix, remoteUrl);
             }
             versionWriter.newLine(writer,2);
         }
     }
 
-    private static void ensureExistVersion(Queue<VersionCollector> versionCollectors, ParsedMessage parsedMessage) {
+    private static void ensureExistVersion(Deque<VersionCollector> versionCollectors, ParsedMessage parsedMessage) {
         if (versionCollectors.isEmpty()) {
-            versionCollectors.add(new VersionCollector("", parsedMessage.getCommitTime()));
+            versionCollectors.addLast(new VersionCollector("", parsedMessage.getCommitTime()));
         }
     }
 }

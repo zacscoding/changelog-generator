@@ -25,6 +25,7 @@ public class CommitMessageParser {
         parsedMessage.setDescription(token[2]);
         parsedMessage.setBody(token[3]);
         parsedMessage.setCommitTime(rev.getCommitterIdent().getWhen());
+        parsedMessage.setCommitHash(rev.getId().getName());
 
         return parsedMessage;
     }

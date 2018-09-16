@@ -14,6 +14,7 @@ public class ParsedMessage {
     private String description;
     private String body;
     private Date commitTime;
+    private String commitHash;
 
     public Type getType() {
         return type;
@@ -55,8 +56,17 @@ public class ParsedMessage {
         this.commitTime = commitTime;
     }
 
+    public String getCommitHash() {
+        return commitHash;
+    }
+
+    public void setCommitHash(String commitHash) {
+        this.commitHash = commitHash;
+    }
+
     @Override
     public String toString() {
-        return "ParsedMessage{" + "type=" + type + ", scope='" + scope + '\'' + ", description='" + description + '\'' + ", body='" + body + '\'' + ", commitTime=" + commitTime + '}';
+        return "ParsedMessage{" + "type=" + type + ", scope='" + scope + '\'' + ", description='" + description + '\'' + ", body='" + body + '\'' + ", commitTime=" + commitTime + ", commitHash='"
+            + commitHash + '\'' + '}';
     }
 }

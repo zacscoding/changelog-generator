@@ -11,59 +11,58 @@ import java.io.Writer;
 public class MarkdownWriter extends VersionWriter {
 
     @Override
-    public void pre(Writer writer, String body) throws IOException {
-        writer.write("```");
-        newLine(writer, 1);
-        writer.write(body);
-        writer.write("```");
-        newLine(writer, 1);
+    public String pre(String body) {
+        return new StringBuilder(body.length() + 16).append("```").append(newLine(1)).append(body).append("```").append(newLine(1)).toString();
     }
 
     @Override
-    public String highlight(String message) throws IOException {
+    public String highlight(String message) {
         return "**" + message + "**";
     }
 
     @Override
-    public void li(Writer writer, String content) throws IOException {
-        writer.write("* " + content);
-        newLine(writer, 1);
+    public String li(String content) {
+        return "* " + content + newLine(1);
     }
 
     @Override
-    public void newLine(Writer writer, int count) throws IOException {
+    public String newLine(int count) {
+        final String lineSeparator = System.lineSeparator();
+        StringBuilder sb = new StringBuilder(lineSeparator.length() * count);
         for (int i = 0; i < count; i++) {
-            writer.write(System.lineSeparator());
+            sb.append(lineSeparator);
         }
+
+        return sb.toString();
     }
 
     @Override
-    public void h1(Writer writer, String content) throws IOException {
-        writer.write("# " + content);
-        newLine(writer, 1);
+    public String a(String href, String content) {
+        return "<a href=\"" + href + "\">" + content + "</a>";
     }
 
     @Override
-    public void h2(Writer writer, String content) throws IOException {
-        writer.write("## " + content);
-        newLine(writer, 1);
+    public String h1(String content) {
+        return "# " + content + newLine(1);
     }
 
     @Override
-    public void h3(Writer writer, String content) throws IOException {
-        writer.write("### " + content);
-        newLine(writer, 1);
+    public String h2(String content) {
+        return "## " + content + newLine(1);
     }
 
     @Override
-    public void h4(Writer writer, String content) throws IOException {
-        writer.write("#### " + content);
-        newLine(writer, 1);
+    public String h3(String content) {
+        return "### " + content + newLine(1);
     }
 
     @Override
-    public void h5(Writer writer, String content) throws IOException {
-        writer.write("##### " + content);
-        newLine(writer, 1);
+    public String h4(String content) {
+        return "#### " + content + newLine(1);
+    }
+
+    @Override
+    public String h5(String content) {
+        return "##### " + content + newLine(1);
     }
 }

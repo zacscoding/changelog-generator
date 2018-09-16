@@ -1,6 +1,8 @@
 import changelog.CommitMessageParser;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.Test;
 
 /**
@@ -11,6 +13,21 @@ import org.junit.Test;
 public class ReadTest {
 
     public static final String DELIMITER = "[_change_log]";
+
+    @Test
+    public void issue() {
+        Pattern pattern = Pattern.compile("(#\\d)");
+        List<String> descriptions = Arrays.asList(
+          "#123a",
+          "#111 asdfhasldf",
+          "#aadsf asdfasdf"
+        );
+
+        for (String description : descriptions) {
+            Matcher matcher = pattern.matcher(description);
+            System.out.println(matcher.matches());
+        }
+    }
 
     @Test
     public void temp() {

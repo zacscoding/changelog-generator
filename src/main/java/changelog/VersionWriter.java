@@ -12,46 +12,58 @@ import java.io.Writer;
 public abstract class VersionWriter {
 
     public void writeVersion(Writer writer, String version, String date) throws IOException {
-        h1(writer, version + "(" + date + ")");
-        newLine(writer, 2);
+        writer.write(h1(version + "(" + date + ")"));
+        writer.write(newLine(2));
     }
 
     public void writeType(Writer writer, String typeName) throws IOException {
-        h3(writer, typeName);
-        newLine(writer, 1);
+        writer.write(h3(typeName));
+        writer.write(newLine(1));
     }
 
-    public void writeTypeContent(Writer writer, ParsedMessage commitMessage) throws IOException {
+    public void writeTypeContent(Writer writer, ParsedMessage commitMessage, String remoteUrl) throws IOException {
+        String prefix = "* ";
         // TODO :: a href commit
         if (commitMessage.getScope() == null) {
-            li(writer, commitMessage.getDescription());
+            prefix += commitMessage.getDescription();
         } else {
-            li(writer, highlight(commitMessage.getScope() + ":") + " " + commitMessage.getDescription());
+            prefix += highlight(commitMessage.getScope() + ":") + " " + commitMessage.getDescription();
         }
 
+        prefix += " (" + a(remoteUrl + "/commit/" + commitMessage.getCommitHash(), commitMessage.getCommitHash().substring(0, 7)) + ")";
+
+        writer.write(prefix);
+
+        // li(writer, commitMessage.getDescription());
         if (commitMessage.getBody() != null) {
-            pre(writer, commitMessage.getBody());
+            writer.write(pre(commitMessage.getBody()));
         }
+        writer.write(newLine(1));
     }
 
-    public abstract void pre(Writer writer, String body) throws IOException;
+    public void newLine(Writer writer, int count) throws IOException {
+        writer.write(newLine(count));
+    }
 
-    public abstract String highlight(String message) throws IOException;
+    public abstract String pre(String body);
 
-    public abstract void li(Writer writer, String content) throws IOException;
+    public abstract String highlight(String message);
 
-    public abstract void newLine(Writer writer, int count) throws IOException;
+    public abstract String li(String content);
 
-    public abstract void h1(Writer writer, String content) throws IOException;
+    public abstract String newLine(int count);
 
-    public abstract void h2(Writer writer, String content) throws IOException;
+    public abstract String a(String href, String content);
 
-    public abstract void h3(Writer writer, String content) throws IOException;
+    public abstract String h1(String content);
 
-    public abstract void h4(Writer writer, String content) throws IOException;
+    public abstract String h2(String content);
 
-    public abstract void h5(Writer writer, String content) throws IOException;
+    public abstract String h3(String content);
 
+    public abstract String h4(String content);
+
+    public abstract String h5(String content);
 
     public enum FileFormat {
         UNKNOWN, MARKDOWN;
